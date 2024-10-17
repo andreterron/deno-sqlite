@@ -1,7 +1,4 @@
-import {
-  assertEquals,
-  assertMatch,
-} from "https://deno.land/std@0.154.0/testing/asserts.ts";
+import { assertEquals, assertMatch } from "@std/assert";
 
 import { DB } from "../mod.ts";
 
@@ -14,8 +11,9 @@ Deno.test("README example", function () {
     )
   `);
 
-  const name =
-    ["Peter Parker", "Clark Kent", "Bruce Wane"][Math.floor(Math.random() * 3)];
+  const name = ["Peter Parker", "Clark Kent", "Bruce Wane"][
+    Math.floor(Math.random() * 3)
+  ];
 
   // Run a simple query
   db.query("INSERT INTO people (name) VALUES (?)", [name]);
@@ -36,11 +34,7 @@ Deno.test("old README example", function () {
 
   for (let i = 0; i < 100; i++) {
     const name = `${first[Math.floor(Math.random() * first.length)]} ${
-      last[
-        Math.floor(
-          Math.random() * last.length,
-        )
-      ]
+      last[Math.floor(Math.random() * last.length)]
     }`;
     const email = `${name.replace(" ", "-")}@deno.land`;
     const subscribed = Math.random() > 0.5 ? true : false;
@@ -51,15 +45,10 @@ Deno.test("old README example", function () {
     ]);
   }
 
-  for (
-    const [
-      name,
-      email,
-    ] of db.query<[string, string]>(
-      "SELECT name, email FROM users WHERE subscribed = ? LIMIT 100",
-      [true],
-    )
-  ) {
+  for (const [name, email] of db.query<[string, string]>(
+    "SELECT name, email FROM users WHERE subscribed = ? LIMIT 100",
+    [true],
+  )) {
     assertMatch(name, /(Bruce|Clark|Peter) (Wane|Kent|Parker)/);
     assertEquals(email, `${name.replace(" ", "-")}@deno.land`);
   }

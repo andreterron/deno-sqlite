@@ -1,8 +1,4 @@
-import {
-  assertEquals,
-  assertInstanceOf,
-  assertThrows,
-} from "https://deno.land/std@0.154.0/testing/asserts.ts";
+import { assertEquals, assertInstanceOf, assertThrows } from "@std/assert";
 
 import { DB, SqlFunctionArgument, SqliteError, Status } from "../mod.ts";
 
@@ -66,11 +62,14 @@ Deno.test("can't define the same function twice", function () {
   const db = new DB();
   const test = () => {};
   db.createFunction(test);
-  assertThrows(() => db.createFunction(test), (err: Error) => {
-    assertInstanceOf(err, SqliteError);
-    assertEquals(err.code, Status.Unknown);
-    assertEquals(err.message, "A function named 'test' already exists");
-  });
+  assertThrows(
+    () => db.createFunction(test),
+    (err: Error) => {
+      assertInstanceOf(err, SqliteError);
+      assertEquals(err.code, Status.Unknown);
+      assertEquals(err.message, "A function named 'test' already exists");
+    },
+  );
 });
 
 Deno.test("can throw errors in user defined functions", function () {
@@ -79,15 +78,24 @@ Deno.test("can throw errors in user defined functions", function () {
     throw new Error(message);
   };
   db.createFunction(error);
-  assertThrows(() => error("Boom!"), (err: Error) => {
-    assertInstanceOf(err, Error);
-    assertEquals(err.message, "Boom!");
-  });
-  assertThrows(() => db.query("SELECT error('Boom!')"), (err: Error) => {
-    assertInstanceOf(err, SqliteError);
-    assertEquals(err.code, Status.SqliteError);
-    assertEquals(err.message, "Error in user defined function 'error': Boom!");
-  });
+  assertThrows(
+    () => error("Boom!"),
+    (err: Error) => {
+      assertInstanceOf(err, Error);
+      assertEquals(err.message, "Boom!");
+    },
+  );
+  assertThrows(
+    () => db.query("SELECT error('Boom!')"),
+    (err: Error) => {
+      assertInstanceOf(err, SqliteError);
+      assertEquals(err.code, Status.SqliteError);
+      assertEquals(
+        err.message,
+        "Error in user defined function 'error': Boom!",
+      );
+    },
+  );
 });
 
 Deno.test("can have multiple functions at the same time", function () {
@@ -195,9 +203,14 @@ Deno.test("return date returns formatted string", function () {
   const unix = (unix: number) => new Date(unix);
   const db = new DB();
   db.createFunction(unix);
-  assertEquals([[
-    "1970-01-01T00:00:00.000Z",
-    "1970-01-01T00:00:00.042Z",
-    "2022-11-03T10:37:19.931Z",
-  ]], db.query("SELECT unix(0), unix(42), unix(1667471839931)"));
+  assertEquals(
+    [
+      [
+        "1970-01-01T00:00:00.000Z",
+        "1970-01-01T00:00:00.042Z",
+        "2022-11-03T10:37:19.931Z",
+      ],
+    ],
+    db.query("SELECT unix(0), unix(42), unix(1667471839931)"),
+  );
 });

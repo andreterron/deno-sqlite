@@ -62,9 +62,7 @@ bench({
   runs: 100,
   func: (b): void => {
     b.start();
-    db.query(
-      "SELECT name, balance FROM users LIMIT 10000",
-    );
+    db.query("SELECT name, balance FROM users LIMIT 10000");
     b.stop();
   },
 });

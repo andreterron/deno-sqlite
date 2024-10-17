@@ -8,8 +8,9 @@
  * the API provided by deno-sqlite.
  */
 
-import { readLines, writeAll } from "https://deno.land/std@0.134.0/io/mod.ts";
-import AsciiTable from "https://deno.land/x/ascii_table@v0.1.0/mod.ts";
+import { writeAll } from "@std/io";
+import { TextLineStream } from "@std/streams";
+import AsciiTable from "ascii-table";
 import { DB } from "../mod.ts";
 
 const db = new DB(Deno.args[0] ?? undefined);
@@ -28,16 +29,16 @@ const tablesQuery = db.prepareQuery<[string]>(
 );
 
 const commands: Record<string, () => Promise<void>> = {
-  "tables": async () => {
+  tables: async () => {
     for (const [name] of tablesQuery.iter()) {
       await print(`${name}\n`);
     }
   },
-  "quit": async () => {
+  quit: async () => {
     await print("\n");
     Deno.exit(0);
   },
-  "help": async () => {
+  help: async () => {
     await print(
       "Type an SQL query or run a command.\nThe following commands are available:\n",
     );
@@ -48,9 +49,15 @@ const commands: Record<string, () => Promise<void>> = {
 };
 
 await prompt();
-for await (const cmd of readLines(Deno.stdin)) {
+
+const stdinLineStream = Deno.stdin.readable
+  .pipeThrough(new TextDecoderStream())
+  .pipeThrough(new TextLineStream());
+
+for await (const cmd of stdinLineStream) {
   if (cmd[0] === ".") {
-    const action = commands[cmd.slice(1)] ??
+    const action =
+      commands[cmd.slice(1)] ??
       (() => print("Unrecognized command, try .help\n"));
     await action();
   } else {

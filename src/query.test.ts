@@ -1,7 +1,4 @@
-import {
-  assertEquals,
-  assertThrows,
-} from "https://deno.land/std@0.154.0/testing/asserts.ts";
+import { assertEquals, assertThrows } from "@std/assert";
 
 import { DB, QueryParameter } from "../mod.ts";
 
@@ -176,11 +173,9 @@ Deno.test("big very large integers", function () {
     query.execute([val]);
   }
 
-  const dbValues = db.query<[number | bigint]>(
-    "SELECT val FROM test ORDER BY id",
-  ).map((
-    [id],
-  ) => BigInt(id));
+  const dbValues = db
+    .query<[number | bigint]>("SELECT val FROM test ORDER BY id")
+    .map(([id]) => BigInt(id));
   assertEquals(goodValues, dbValues);
 
   for (const bigVal of overflowValues) {
@@ -202,52 +197,45 @@ Deno.test("bind named parameters", function () {
 
   // :name
   db.query("INSERT INTO test (val) VALUES (:val)", { val: "value" });
-  db.query(
-    "INSERT INTO test (val) VALUES (:otherVal)",
-    { otherVal: "value other" },
-  );
-  db.query(
-    "INSERT INTO test (val) VALUES (:explicitColon)",
-    { ":explicitColon": "value explicit" },
-  );
+  db.query("INSERT INTO test (val) VALUES (:otherVal)", {
+    otherVal: "value other",
+  });
+  db.query("INSERT INTO test (val) VALUES (:explicitColon)", {
+    ":explicitColon": "value explicit",
+  });
 
   // @name
-  db.query(
-    "INSERT INTO test (val) VALUES (@someName)",
-    { "@someName": "@value" },
-  );
+  db.query("INSERT INTO test (val) VALUES (@someName)", {
+    "@someName": "@value",
+  });
 
   // $name
-  db.query(
-    "INSERT INTO test (val) VALUES ($var::Name)",
-    { "$var::Name": "$value" },
-  );
+  db.query("INSERT INTO test (val) VALUES ($var::Name)", {
+    "$var::Name": "$value",
+  });
 
   // explicit positional syntax
   db.query("INSERT INTO test (id, val) VALUES (?2, ?1)", ["this-is-it", 1000]);
 
   // names must exist
   assertThrows(() => {
-    db.query(
-      "INSERT INTO test (val) VALUES (:val)",
-      { Val: "miss-spelled name" },
-    );
+    db.query("INSERT INTO test (val) VALUES (:val)", {
+      Val: "miss-spelled name",
+    });
   });
 
   // make sure the data came through correctly
-  const vals = [...db.query("SELECT val FROM test ORDER BY id ASC")]
-    .map(([datum]) => datum);
-  assertEquals(
-    vals,
-    [
-      "value",
-      "value other",
-      "value explicit",
-      "@value",
-      "$value",
-      "this-is-it",
-    ],
+  const vals = [...db.query("SELECT val FROM test ORDER BY id ASC")].map(
+    ([datum]) => datum,
   );
+  assertEquals(vals, [
+    "value",
+    "value other",
+    "value explicit",
+    "@value",
+    "$value",
+    "this-is-it",
+  ]);
 });
 
 Deno.test("iterate from prepared query", function () {
@@ -450,11 +438,15 @@ Deno.test("columns can be obtained from empty prepared query", function () {
   query.finalize();
 
   assertEquals(
-    [{ name: "id", originName: "id", tableName: "test" }, {
-      name: "name",
-      originName: "name",
-      tableName: "test",
-    }, { name: "age", originName: "age", tableName: "test" }],
+    [
+      { name: "id", originName: "id", tableName: "test" },
+      {
+        name: "name",
+        originName: "name",
+        tableName: "test",
+      },
+      { name: "age", originName: "age", tableName: "test" },
+    ],
     columnsFromPreparedQuery,
   );
   assertEquals(
@@ -478,10 +470,7 @@ Deno.test("invalid number of bound parameters throws", function () {
   // too few
   assertThrows(() => db.query("SELECT * FROM test LIMIT ?", []));
   assertThrows(() => {
-    db.query(
-      "SELECT * FROM test WHERE id >= ? AND id <= ? LIMIT ?",
-      [42],
-    );
+    db.query("SELECT * FROM test WHERE id >= ? AND id <= ? LIMIT ?", [42]);
   });
 });
 

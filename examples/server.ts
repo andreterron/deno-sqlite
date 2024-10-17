@@ -9,7 +9,6 @@
  * the API provided by deno-sqlite.
  */
 
-import { serve } from "https://deno.land/std@0.134.0/http/mod.ts";
 import { DB } from "../mod.ts";
 
 const db = new DB();
@@ -31,7 +30,7 @@ const countVisitsQuery = db.prepareQuery<[number]>(
 
 console.log("Running server on localhost:8080");
 
-await serve((req) => {
+Deno.serve({ port: 8080 }, (req) => {
   addVisitQuery.execute({
     url: req.url,
     time: new Date(),
@@ -39,4 +38,4 @@ await serve((req) => {
 
   const [count] = countVisitsQuery.one({ url: req.url });
   return new Response(`This page was visited ${count} times!`);
-}, { port: 8080 });
+});

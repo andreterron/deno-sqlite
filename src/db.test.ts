@@ -4,7 +4,7 @@ import {
   assertEquals,
   assertInstanceOf,
   assertThrows,
-} from "https://deno.land/std@0.154.0/testing/asserts.ts";
+} from "@std/assert";
 
 import { DB } from "../mod.ts";
 import { Status } from "./constants.ts";
@@ -15,9 +15,8 @@ const LARGE_TEST_DB = "build/2GB_test.db";
 
 async function dbPermissions(path: string): Promise<boolean> {
   const query = async (name: "read" | "write") =>
-    (await Deno.permissions.query({ name, path })).state ===
-      "granted";
-  return await query("read") && await query("write");
+    (await Deno.permissions.query({ name, path })).state === "granted";
+  return (await query("read")) && (await query("write"));
 }
 
 const TEST_DB_PERMISSIONS = await dbPermissions(TEST_DB);
@@ -26,10 +25,14 @@ const LARGE_TEST_DB_PERMISSIONS = await dbPermissions(LARGE_TEST_DB);
 async function deleteDatabase(file: string) {
   try {
     await Deno.remove(file);
-  } catch { /* no op */ }
+  } catch {
+    /* no op */
+  }
   try {
     await Deno.remove(`${file}-journal`);
-  } catch { /* no op */ }
+  } catch {
+    /* no op */
+  }
 }
 
 Deno.test("execute multiple statements", function () {
@@ -71,7 +74,7 @@ Deno.test("foreign key constraints enabled", function () {
 
   // user must exist
   assertThrows(() =>
-    db.query("INSERT INTO orders (user) VALUES (?)", [id + 1])
+    db.query("INSERT INTO orders (user) VALUES (?)", [id + 1]),
   );
   db.query("INSERT INTO orders (user) VALUES (?)", [id]);
 
@@ -110,10 +113,10 @@ Deno.test("json functions exist", function () {
   const [[stringType]] = db.query(`SELECT json_type(?)`, [`"hello"`]);
   assertEquals(stringType, "text");
 
-  const [[integerTypeAtPath]] = db.query(
-    `SELECT json_type(?, ?)`,
-    [`["hello", 2, {"world": 4}]`, `$[2].world`],
-  );
+  const [[integerTypeAtPath]] = db.query(`SELECT json_type(?, ?)`, [
+    `["hello", 2, {"world": 4}]`,
+    `$[2].world`,
+  ]);
   assertEquals(integerTypeAtPath, "integer");
 });
 
@@ -139,8 +142,7 @@ Deno.test("SQL localtime reflects system locale", function () {
   const jsHour = `${now.getHours()}`.padStart(2, "0");
   const jsMinute = `${now.getMinutes()}`.padStart(2, "0");
   const jsSecond = `${now.getSeconds()}`.padStart(2, "0");
-  const timeJs =
-    `${now.getFullYear()}-${jsMonth}-${jsDate} ${jsHour}:${jsMinute}:${jsSecond}`;
+  const timeJs = `${now.getFullYear()}-${jsMonth}-${jsDate} ${jsHour}:${jsMinute}:${jsSecond}`;
 
   assertEquals(timeDb, timeJs);
 });
@@ -274,9 +276,7 @@ Deno.test("serialize / deserialize round-trips correctly", function () {
 
   const original = db.serialize();
 
-  db.query(
-    "INSERT INTO test (id, value) VALUES (3, 'Added after serialize')",
-  );
+  db.query("INSERT INTO test (id, value) VALUES (3, 'Added after serialize')");
   assertEquals(
     [["Hello"], ["World"], ["Added after serialize"]],
     db.query("SELECT value FROM test"),
@@ -311,28 +311,26 @@ Deno.test("can't modify a database deserialized as read-only", function () {
 
   // after calling deserialize inserts throw
   assertThrows(() =>
-    db.execute("INSERT INTO test (id, value) VALUES (2, 'This fails!')")
+    db.execute("INSERT INTO test (id, value) VALUES (2, 'This fails!')"),
   );
 });
 
 Deno.test("can't serialize an unknown database", function () {
   const db = new DB();
-  assertThrows(() => db.serialize("unknown-schema"), (err: Error) => {
-    assertInstanceOf(err, SqliteError);
-    assertEquals(err.code, Status.Unknown);
-    assertEquals(err.message, "Failed to serialize database 'unknown-schema'");
-  });
+  const err = assertThrows(() => db.serialize("unknown-schema"));
+  assertInstanceOf(err, SqliteError);
+  assertEquals(err.code, Status.Unknown);
+  assertEquals(err.message, "Failed to serialize database 'unknown-schema'");
 });
 
 Deno.test("can't deserialize into temp database", function () {
   const db = new DB();
   db.execute("CREATE TABLE test (id INTEGER PRIMARY KEY)");
   const data = db.serialize();
-  assertThrows(() => db.deserialize(data, { schema: "temp" }), (err: Error) => {
-    assertInstanceOf(err, SqliteError);
-    assertEquals(err.code, Status.SqliteError);
-    assertEquals(err.message, "Failed to deserialize into database 'temp'");
-  });
+  const err = assertThrows(() => db.deserialize(data, { schema: "temp" }));
+  assertInstanceOf(err, SqliteError);
+  assertEquals(err.code, Status.SqliteError);
+  assertEquals(err.message, "Failed to deserialize into database 'temp'");
 });
 
 Deno.test("transactions can be nested", function () {
@@ -421,11 +419,9 @@ Deno.test(
 
     // open the same database with a separate connection
     const readOnlyDb = await new DB(TEST_DB, { mode: "read" });
-    for (
-      const [id, val] of readOnlyDb.query<[number, string]>(
-        "SELECT * FROM test",
-      )
-    ) {
+    for (const [id, val] of readOnlyDb.query<[number, string]>(
+      "SELECT * FROM test",
+    )) {
       assertEquals(data[id - 1], val);
     }
 
@@ -459,9 +455,9 @@ Deno.test(
       tempDb.query("INSERT INTO test (val) VALUES (?)", [val]);
     }
 
-    for (
-      const [id, val] of tempDb.query<[number, string]>("SELECT * FROM test")
-    ) {
+    for (const [id, val] of tempDb.query<[number, string]>(
+      "SELECT * FROM test",
+    )) {
       assertEquals(data[id - 1], val);
     }
 
@@ -510,7 +506,7 @@ Deno.test(
 
     // ... but we can't write with a read-only connection
     const err = assertThrows(() =>
-      dbRead.query("INSERT INTO test (name) VALUES (?)", ["this-fails"])
+      dbRead.query("INSERT INTO test (name) VALUES (?)", ["this-fails"]),
     );
     assertInstanceOf(err, SqliteError);
     assertEquals(err.code, Status.SqliteReadOnly);
@@ -536,14 +532,14 @@ Deno.test(
 
     // however, opening in read-only mode should work (the file was created
     // in the previous test)
-    (new DB(TEST_DB, { mode: "read" })).close();
+    new DB(TEST_DB, { mode: "read" }).close();
 
     // with memory flag set, the database will be in memory and
     // not require any permissions
-    (new DB(TEST_DB, { mode: "create", memory: true })).close();
+    new DB(TEST_DB, { mode: "create", memory: true }).close();
 
     // the mode can also be specified via a URI flag
-    (new DB(`file:${TEST_DB}?mode=memory`, { uri: true })).close();
+    new DB(`file:${TEST_DB}?mode=memory`, { uri: true }).close();
   },
 );
 
